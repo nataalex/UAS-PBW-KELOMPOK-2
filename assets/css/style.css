@@ -718,3 +718,56 @@ textarea { resize: vertical; min-height: 90px; }
     .stat-grid { grid-template-columns: 1fr 1fr; }
     .event-grid { grid-template-columns: 1fr; }
 }
+
+/* KUSTOMISASI SWEETALERT2 BIAR PREMIUM & NATURAL */
+.custom-swal-popup {
+    font-family: 'Inter', 'Segoe UI', Roboto, sans-serif !important;
+    border-radius: 16px !important; /* Lengkungan sudut yang halus */
+    padding: 30px 24px !important;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important; /* Shadow tipis modern */
+}
+
+.custom-swal-title {
+    font-size: 20px !important;
+    font-weight: 600 !important;
+    color: #0f172a !important; /* Warna text gelap elegan */
+    padding-top: 10px !important;
+}
+
+.custom-swal-text {
+    font-size: 14px !important;
+    color: #475569 !important;
+    line-height: 1.5 !important;
+}
+
+/* Styling Tombol Kustom */
+.custom-swal-confirm, .custom-swal-cancel {
+    padding: 10px 20px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important; /* Menyesuaikan tombol modern saat ini */
+    margin: 0 6px !important;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+/* Tombol Hapus (Merah Muted/Soft) */
+.custom-swal-confirm {
+    background-color: #ef4444 !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+.custom-swal-confirm:hover {
+    background-color: #dc2626 !important;
+}
+
+/* Tombol Batal (Abu-abu Bersih) */
+.custom-swal-cancel {
+    background-color: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #e2e8f0 !important;
+}
+.custom-swal-cancel:hover {
+    background-color: #e2e8f0 !important;
+    color: #1e293b !important;
+}

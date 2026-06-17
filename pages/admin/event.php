@@ -1,6 +1,6 @@
 <?php
 // ============================================
-// pages/admin/event.php — Kelola Event (CRUD)
+// pages/admin/event.php — Kelola Event (Fixed Overlap & No Icon)
 // ============================================
 session_start();
 require_once '../../config/koneksi.php';
@@ -113,7 +113,7 @@ $filter_kat   = (int)($_GET['kategori'] ?? 0);
 $filter_status = bersihkan($_GET['status'] ?? '');
 
 $where = "WHERE 1=1";
-if ($cari)         $where .= " AND e.nama_event LIKE '%$cari%'";
+if ($cari)          $where .= " AND e.nama_event LIKE '%$cari%'";
 if ($filter_kat)   $where .= " AND e.id_kategori=$filter_kat";
 if ($filter_status) $where .= " AND e.status='$filter_status'";
 
@@ -137,21 +137,361 @@ $list_event = mysqli_query($koneksi,
 ?>
 <?php include '../../includes/header.php'; ?>
 
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --royal-blue: #1d4ed8;       
+        --deep-blue: #1e40af;        
+        --bg-dashboard: #f8fafc;     
+        --text-dark: #0f172a;        
+        --text-muted: #64748b;       
+        --border-color: #e2e8f0;     
+    }
+
+    body {
+        background-color: var(--bg-dashboard);
+        margin: 0;
+    }
+
+    .app-wrapper {
+        background-color: var(--bg-dashboard);
+        min-height: 100vh;
+        display: flex;
+    }
+
+    .main-content {
+        margin-left: 260px; 
+        width: calc(100% - 260px);
+        padding: 40px; /* Padding dikembalikan normal karena bug melayang sudah diatasi */
+        background-color: var(--bg-dashboard);
+        min-height: 100vh;
+        box-sizing: border-box;
+        transition: all 0.3s ease;
+    }
+
+    .main-content * {
+        box-sizing: border-box;
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* --- TOPBAR AREA (KODE YANG DIPERBAIKI UNTUK MENCEGAH OVERLAP) --- */
+    .topbar {
+        position: relative !important; /* Memaksa topbar tidak melayang */
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important; 
+        padding-bottom: 24px !important; 
+        margin-bottom: 32px !important;  
+        border-bottom: 2px solid var(--border-color) !important; 
+        background: transparent !important;
+        width: 100% !important;
+        height: auto !important; /* Mereset tinggi jika sebelumnya di-set dari header.php */
+        z-index: 10 !important;
+    }
+
+    .topbar-judul {
+        font-size: 28px; 
+        font-weight: 800; 
+        color: var(--text-dark);
+        letter-spacing: -0.75px;
+        line-height: 1.2;
+    }
+
+    .topbar-sub {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin-top: 6px;
+        font-weight: 500;
+    }
+
+    .btn.btn-utama {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center; /* Memastikan teks di tengah setelah ikon dihapus */
+        gap: 8px;
+        padding: 12px 24px;
+        background: linear-gradient(135deg, var(--royal-blue) 0%, var(--deep-blue) 100%);
+        color: #ffffff;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 12px; 
+        border: none;
+        box-shadow: 0 4px 14px rgba(29, 78, 216, 0.25);
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .btn.btn-utama:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(29, 78, 216, 0.4);
+    }
+
+    /* --- FORM & CARD OVERRIDE --- */
+    .card {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.01);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #f1f5f9;
+        background: transparent !important;
+    }
+
+    .card-judul {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    .btn-abu {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--royal-blue);
+        text-decoration: none;
+        padding: 8px 16px;
+        background: #eff6ff;
+        border-radius: 8px;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-abu:hover {
+        background: var(--royal-blue);
+        color: #ffffff;
+    }
+
+    .btn-merah {
+        font-size: 12px;
+        font-weight: 600;
+        color: #dc2626;
+        text-decoration: none;
+        padding: 8px 12px;
+        background: #fee2e2;
+        border-radius: 8px;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-merah:hover {
+        background: #dc2626;
+        color: #ffffff;
+    }
+
+    /* CARI & FILTER AREA STYLE */
+    .cari-filter {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+
+    .input-cari {
+        flex: 1;
+        min-width: 200px;
+        padding: 10px 16px;
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .input-cari:focus {
+        border-color: var(--royal-blue);
+    }
+
+    .cari-filter select {
+        padding: 10px 16px;
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        font-size: 14px;
+        background-color: #fff;
+        outline: none;
+    }
+
+    /* --- TABEL DESIGN --- */
+    .tabel-wrapper {
+        overflow-x: auto;
+    }
+
+    .tabel-wrapper table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .tabel-wrapper th {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        padding: 12px 14px;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .tabel-wrapper td {
+        padding: 16px 14px;
+        font-size: 14px;
+        color: var(--text-dark);
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .tabel-wrapper tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    /* BAR KUOTA PROGRESS */
+    .kuota-bar {
+        background-color: #f1f5f9;
+        border-radius: 99px;
+        overflow: hidden;
+    }
+    .kuota-isi {
+        height: 100%;
+        border-radius: 99px;
+    }
+
+    /* BADGE UNIFORM */
+    .badge, [class*="badge-"], [class*="status-"] {
+        display: inline-flex !important;
+        align-items: center;
+        padding: 4px 10px !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        text-transform: capitalize !important;
+        border: none !important;
+    }
+    .badge-success, .status-published, .status-confirmed, .badge-aktif { background: #d1fae5 !important; color: #065f46 !important; }
+    .badge-warning, .status-draft, .badge-pending { background: #fef3c7 !important; color: #92400e !important; }
+    .badge-danger, .status-cancelled, .status-selesai { background: #fee2e2 !important; color: #991b1b !important; }
+
+    /* PAGINASI UNIFORM */
+    .paginasi {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 24px;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .paginasi-tombol {
+        display: flex;
+        gap: 6px;
+    }
+
+    .paginasi-tombol a, .paginasi-tombol span {
+        padding: 8px 14px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--text-dark);
+        font-weight: 500;
+    }
+
+    .paginasi-tombol a.aktif {
+        background: var(--royal-blue);
+        color: #ffffff;
+        border-color: var(--royal-blue);
+    }
+
+    .paginasi-tombol .nonaktif {
+        color: #cbd5e1;
+        cursor: not-allowed;
+    }
+
+    /* FORM GROUP UTILITY */
+    .form-grup {
+        margin-bottom: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-grup label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .form-grup input, .form-grup select, .form-grup textarea {
+        padding: 10px 14px;
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .form-grup input:focus, .form-grup select:focus, .form-grup textarea:focus {
+        border-color: var(--royal-blue);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+
+    .btn-menu {
+        display: none;
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: var(--text-dark);
+        margin-right: 14px;
+        padding: 0;
+    }
+
+    /* RESPONSIVE FILTER & CONTENT */
+    @media (max-width: 1024px) {
+        .main-content { margin-left: 0; width: 100%; padding: 40px 24px 24px 24px; }
+        .btn-menu { display: block; }
+    }
+
+    @media (max-width: 640px) {
+        .topbar { flex-direction: column; align-items: flex-start; gap: 16px; }
+        .btn.btn-utama { width: 100%; justify-content: center; }
+        .form-row { grid-template-columns: 1fr; }
+        .cari-filter { flex-direction: column; }
+        .cari-filter * { width: 100%; }
+    }
+</style>
+
 <div class="app-wrapper">
     <div id="sidebarOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90"></div>
+    
     <?php include '../../includes/sidebar_admin.php'; ?>
 
     <main class="main-content">
         <div class="topbar">
-            <div class="topbar-kiri">
-                <button class="btn-menu" id="btnMenu">☰</button>
+            <div class="topbar-kiri" style="display:flex; align-items:center;">
+                <button class="btn-menu" id="btnMenu"></button>
                 <div>
                     <div class="topbar-judul">Kelola Event</div>
                     <div class="topbar-sub">Tambah, edit, dan hapus event kampus</div>
                 </div>
             </div>
             <div class="topbar-kanan">
-                <a href="?aksi=tambah" class="btn btn-utama">➕ Tambah Event</a>
+                <a href="?aksi=tambah" class="btn btn-utama">
+                    Tambah Event
+                </a>
             </div>
         </div>
 
@@ -159,16 +499,16 @@ $list_event = mysqli_query($koneksi,
             <?php tampilkanFlash(); ?>
 
             <?php if (!empty($errors ?? [])): ?>
-                <div class="alert alert-error">
+                <div class="alert alert-error" style="background:#fee2e2; color:#991b1b; padding:12px 16px; border-radius:10px; margin-bottom:20px; font-size:14px; font-weight:500;">
                     <?php foreach ($errors as $e) echo "• $e<br>"; ?>
                 </div>
             <?php endif; ?>
 
             <?php if ($aksi === 'tambah' || $aksi === 'edit'): ?>
-            <div class="card" style="margin-bottom:20px">
+            <div class="card" style="margin-bottom:32px">
                 <div class="card-header">
-                    <span class="card-judul"><?= $aksi === 'edit' ? '✏️ Edit Event' : '➕ Tambah Event Baru' ?></span>
-                    <a href="event.php" class="btn btn-abu btn-sm">← Kembali</a>
+                    <span class="card-judul"><?= $aksi === 'edit' ? 'Edit Event' : 'Tambah Event Baru' ?></span>
+                    <a href="event.php" class="btn-abu" style="padding: 6px 14px;">Kembali</a>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="">
@@ -179,7 +519,7 @@ $list_event = mysqli_query($koneksi,
                         <div class="form-grup">
                             <label>Nama Event <span style="color:red">*</span></label>
                             <input type="text" name="nama_event" required
-                                   placeholder="Contoh: Seminar Nasional Teknologi 2025"
+                                   placeholder="Contoh: Seminar Nasional Teknologi 2026"
                                    value="<?= htmlspecialchars($edit_data['nama_event'] ?? $_POST['nama_event'] ?? '') ?>">
                         </div>
 
@@ -187,7 +527,7 @@ $list_event = mysqli_query($koneksi,
                             <div class="form-grup">
                                 <label>Kategori <span style="color:red">*</span></label>
                                 <select name="id_kategori" required>
-                                    <option value="">-- Pilih Kategori --</option>
+                                    <option value="">Pilih Kategori</option>
                                     <?php
                                     mysqli_data_seek($list_kategori, 0);
                                     while ($k = mysqli_fetch_assoc($list_kategori)):
@@ -200,7 +540,7 @@ $list_event = mysqli_query($koneksi,
                             <div class="form-grup">
                                 <label>Ruangan <span style="color:red">*</span></label>
                                 <select name="id_ruangan" required>
-                                    <option value="">-- Pilih Ruangan --</option>
+                                    <option value="">Pilih Ruangan</option>
                                     <?php
                                     mysqli_data_seek($list_ruangan, 0);
                                     while ($r = mysqli_fetch_assoc($list_ruangan)):
@@ -216,7 +556,7 @@ $list_event = mysqli_query($koneksi,
 
                         <div class="form-grup">
                             <label>Deskripsi Event</label>
-                            <textarea name="deskripsi" placeholder="Jelaskan tentang event ini..."><?= htmlspecialchars($edit_data['deskripsi'] ?? $_POST['deskripsi'] ?? '') ?></textarea>
+                            <textarea name="deskripsi" rows="4" placeholder="Jelaskan tentang event ini..."><?= htmlspecialchars($edit_data['deskripsi'] ?? $_POST['deskripsi'] ?? '') ?></textarea>
                         </div>
 
                         <div class="form-row">
@@ -250,14 +590,14 @@ $list_event = mysqli_query($koneksi,
                         <div class="form-row">
                             <div class="form-grup">
                                 <label>Jenis Tiket</label>
-                                <select name="jenis_tiket" class="form-kontrol" onchange="document.getElementById('grup_harga').style.display = (this.value === 'berbayar') ? 'block' : 'none'">
+                                <select name="jenis_tiket" onchange="document.getElementById('grup_harga').style.display = (this.value === 'berbayar') ? 'block' : 'none'">
                                     <option value="gratis" <?= ($edit_data['jenis_tiket'] ?? '') == 'gratis' ? 'selected' : '' ?>>Gratis</option>
                                     <option value="berbayar" <?= ($edit_data['jenis_tiket'] ?? '') == 'berbayar' ? 'selected' : '' ?>>Berbayar</option>
                                 </select>
                             </div>
                             <div class="form-grup" id="grup_harga" style="display: <?= ($edit_data['jenis_tiket'] ?? 'gratis') == 'berbayar' ? 'block' : 'none' ?>;">
                                 <label>Harga Tiket (Rp)</label>
-                                <input type="number" name="harga" class="form-kontrol" value="<?= $edit_data['harga'] ?? 0 ?>" placeholder="Contoh: 50000">
+                                <input type="number" name="harga" value="<?= $edit_data['harga'] ?? 0 ?>" placeholder="Contoh: 50000">
                             </div>
                         </div>
 
@@ -274,11 +614,11 @@ $list_event = mysqli_query($koneksi,
                             </select>
                         </div>
 
-                        <div style="display:flex;gap:10px;margin-top:16px">
+                        <div style="display:flex;gap:10px;margin-top:24px">
                             <button type="submit" class="btn btn-utama">
-                                <?= $aksi === 'edit' ? '💾 Simpan Perubahan' : '✅ Tambah Event' ?>
+                                <?= $aksi === 'edit' ? 'Simpan Perubahan' : 'Tambah Event' ?>
                             </button>
-                            <a href="event.php" class="btn btn-abu">Batal</a>
+                            <a href="event.php" class="btn-abu" style="text-align:center; display:inline-flex; align-items:center;">Batal</a>
                         </div>
                     </form>
                 </div>
@@ -286,8 +626,8 @@ $list_event = mysqli_query($koneksi,
             <?php endif; ?>
 
             <div class="card">
-                <div class="card-header">
-                    <span class="card-judul">📋 Daftar Event (<?= $total_rows ?>)</span>
+                <div class="card-header" style="margin-bottom: 24px;">
+                    <span class="card-judul">Daftar Event Kampus (<?= $total_rows ?>)</span>
                 </div>
 
                 <form method="GET" action="">
@@ -295,7 +635,7 @@ $list_event = mysqli_query($koneksi,
                         <input type="text" class="input-cari" name="cari"
                                placeholder="Cari nama event..."
                                value="<?= htmlspecialchars($cari) ?>">
-                        <select name="kategori" style="padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit">
+                        <select name="kategori">
                             <option value="">Semua Kategori</option>
                             <?php
                             mysqli_data_seek($list_kategori, 0);
@@ -305,14 +645,14 @@ $list_event = mysqli_query($koneksi,
                             <option value="<?= $k['id_kategori'] ?>" <?= $sel ?>><?= htmlspecialchars($k['nama_kategori']) ?></option>
                             <?php endwhile; ?>
                         </select>
-                        <select name="status" style="padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit">
+                        <select name="status">
                             <option value="">Semua Status</option>
                             <option value="draft"     <?= $filter_status === 'draft'     ? 'selected' : '' ?>>Draft</option>
                             <option value="published" <?= $filter_status === 'published' ? 'selected' : '' ?>>Published</option>
                             <option value="selesai"   <?= $filter_status === 'selesai'   ? 'selected' : '' ?>>Selesai</option>
                         </select>
-                        <button type="submit" class="btn btn-utama btn-sm">🔍 Cari</button>
-                        <a href="event.php" class="btn btn-abu btn-sm">Reset</a>
+                        <button type="submit" class="btn btn-utama" style="padding: 10px 20px; border-radius:10px;">Cari</button>
+                        <a href="event.php" class="btn-abu" style="display:inline-flex; align-items:center;">Reset</a>
                     </div>
                 </form>
 
@@ -320,63 +660,58 @@ $list_event = mysqli_query($koneksi,
                     <table>
                         <thead>
                             <tr>
-                                <th>No</th>
+                                <th style="width: 50px">No</th>
                                 <th>Nama Event</th>
                                 <th>Kategori & Tiket</th>
                                 <th>Tanggal & Waktu</th>
                                 <th>Ruangan & Kuota</th>
                                 <th>Status</th>
-                                <th>Aksi</th>
+                                <th style="width: 100px; text-align: center;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (mysqli_num_rows($list_event) === 0): ?>
                             <tr>
-                                <td colspan="7" style="text-align:center;padding:30px;color:#64748b">
-                                    😕 Tidak ada event ditemukan.
+                                <td colspan="7" style="text-align:center;padding:40px;color:#64748b; font-weight: 500;">
+                                     Tidak ada data event ditemukan.
                                 </td>
                             </tr>
                             <?php else: $no = $offset + 1; while ($row = mysqli_fetch_assoc($list_event)): ?>
                             <tr>
-                                <td><?= $no++ ?></td>
+                                <td><strong><?= $no++ ?></strong></td>
                                 <td>
-                                    <strong><?= htmlspecialchars($row['nama_event']) ?></strong><br>
+                                    <span style="font-weight:700; color:var(--text-dark)"><?= htmlspecialchars($row['nama_event']) ?></span><br>
                                     <?php if ($row['pembicara']): ?>
-                                    <small style="color:#64748b">🎤 <?= htmlspecialchars($row['pembicara']) ?></small>
+                                    <small style="color:var(--text-muted); font-weight: 500;">Oleh <?= htmlspecialchars($row['pembicara']) ?></small>
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <small><?= htmlspecialchars($row['nama_kategori']) ?></small><br>
-                                    <small style="font-weight:bold;color:var(--biru-utama)">
+                                    <span style="font-weight: 600; color: #475569; font-size:13px;"><?= htmlspecialchars($row['nama_kategori']) ?></span><br>
+                                    <span style="font-weight:700;color:var(--royal-blue); font-size:12px;">
                                         <?= $row['jenis_tiket'] === 'berbayar' ? 'Rp ' . number_format($row['harga'], 0, ',', '.') : 'Gratis' ?>
-                                    </small>
+                                    </span>
                                 </td>
                                 <td>
-                                    <small><?= formatTanggal($row['tanggal_mulai']) ?></small><br>
-                                    <small style="color:#64748b"><?= formatWaktu($row['waktu_mulai']) ?></small>
+                                    <span style="font-weight: 600; color: var(--text-dark);"><?= formatTanggal($row['tanggal_mulai']) ?></span><br>
+                                    <small style="color:var(--text-muted); font-weight:500;"><?= formatWaktu($row['waktu_mulai']) ?> WIB</small>
                                 </td>
                                 <td>
-                                    <small><?= htmlspecialchars($row['nama_ruangan']) ?></small><br>
+                                    <span style="font-weight: 600; color: var(--text-dark);"><?= htmlspecialchars($row['nama_ruangan']) ?></span><br>
                                     <?php $sisa = $row['kapasitas'] - $row['jumlah_daftar']; ?>
-                                    <small><?= $row['jumlah_daftar'] ?>/<?= $row['kapasitas'] ?> Terisi</small>
-                                    <div class="kuota-bar" style="width:80px; height:4px; margin-top:2px;">
-                                        <div class="kuota-isi" style="width:<?= min(100, round($row['jumlah_daftar']/$row['kapasitas']*100)) ?>%;background:<?= $sisa <= 0 ? '#dc2626' : '#3b82f6' ?>"></div>
+                                    <small style="color: var(--text-muted); font-weight:600;"><?= $row['jumlah_daftar'] ?>/<?= $row['kapasitas'] ?> Terisi</small>
+                                    <div class="kuota-bar" style="width:100px; height:5px; margin-top:4px;">
+                                        <div class="kuota-isi" style="width:<?= min(100, round($row['jumlah_daftar']/$row['kapasitas']*100)) ?>%;background:<?= $sisa <= 0 ? '#dc2626' : 'var(--royal-blue)' ?>"></div>
                                     </div>
                                 </td>
                                 <td><?= badgeStatus($row['status']) ?></td>
-                                <td>
-                                    <?php 
-                                    // Pengecekan Hak Akses Tombol Edit/Hapus
-                                    if ($row['penyelenggara'] === $admin_org || $admin_org === 'Pusat'): 
-                                    ?>
-                                        <div style="display:flex;gap:4px">
-                                            <a href="?aksi=edit&id=<?= $row['id_event'] ?>"
-                                               class="btn btn-abu btn-sm" title="Edit">✏️</a>
-                                            <a href="#" onclick="konfirmasiHapus('?aksi=hapus&id=<?= $row['id_event'] ?>', '<?= addslashes($row['nama_event']) ?>')"
-                                               class="btn btn-merah btn-sm" title="Hapus">🗑️</a>
+                                <td style="text-align: center;">
+                                    <?php if ($row['penyelenggara'] === $admin_org || $admin_org === 'Pusat'): ?>
+                                        <div style="display:flex; gap:6px; justify-content: center;">
+                                            <a href="?aksi=edit&id=<?= $row['id_event'] ?>" class="btn-abu" style="padding: 6px 10px; font-size:13px;" title="Edit">Edit</a>
+                                            <a href="?aksi=hapus&id=<?= $row['id_event'] ?>" class="btn-merah btn-hapus-custom" data-nama="<?= htmlspecialchars($row['nama_event']) ?>" style="padding: 6px 10px; font-size:13px;" title="Hapus">Hapus</a>
                                         </div>
                                     <?php else: ?>
-                                        <span class="badge" style="background:#e0e7ff; color:#3730a3; padding: 4px 8px; font-size: 11px;">Milik <?= htmlspecialchars($row['penyelenggara']) ?></span>
+                                        <span class="badge" style="background:#f1f5f9; color:#475569; padding: 4px 8px; font-size:11px;">Milik <?= htmlspecialchars($row['penyelenggara']) ?></span>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -387,7 +722,7 @@ $list_event = mysqli_query($koneksi,
 
                 <?php if ($total_hal > 1): ?>
                 <div class="paginasi">
-                    <span>Menampilkan <?= $offset + 1 ?>–<?= min($offset + $per_halaman, $total_rows) ?> dari <?= $total_rows ?> event</span>
+                    <span style="font-weight: 500;">Menampilkan <?= $offset + 1 ?>–<?= min($offset + $per_halaman, $total_rows) ?> dari <?= $total_rows ?> total event</span>
                     <div class="paginasi-tombol">
                         <?php if ($hal_ini > 1): ?>
                             <a href="?hal=<?= $hal_ini-1 ?>&cari=<?= urlencode($cari) ?>&kategori=<?= $filter_kat ?>&status=<?= $filter_status ?>">← Prev</a>
@@ -396,8 +731,7 @@ $list_event = mysqli_query($koneksi,
                         <?php endif; ?>
 
                         <?php for ($i = 1; $i <= $total_hal; $i++): ?>
-                            <a href="?hal=<?= $i ?>&cari=<?= urlencode($cari) ?>&kategori=<?= $filter_kat ?>&status=<?= $filter_status ?>"
-                               class="<?= $i === $hal_ini ? 'aktif' : '' ?>"><?= $i ?></a>
+                            <a href="?hal=<?= $i ?>&cari=<?= urlencode($cari) ?>&kategori=<?= $filter_kat ?>&status=<?= $filter_status ?>" class="<?= $i === $hal_ini ? 'aktif' : '' ?>"><?= $i ?></a>
                         <?php endfor; ?>
 
                         <?php if ($hal_ini < $total_hal): ?>
@@ -412,5 +746,54 @@ $list_event = mysqli_query($koneksi,
         </div>
     </main>
 </div>
+
+<script>
+    const btnMenu = document.getElementById('btnMenu');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    if(btnMenu && sidebar && overlay) {
+        btnMenu.addEventListener('click', () => {
+            sidebar.style.transform = 'translateX(0)';
+            sidebar.style.left = '0';
+            overlay.style.display = 'block';
+        });
+
+        overlay.addEventListener('click', () => {
+            sidebar.style.transform = 'translateX(-100%)';
+            overlay.style.display = 'none';
+        });
+    }
+</script>
+
+<script>
+document.querySelectorAll('.btn-hapus-custom').forEach(button => {
+    button.addEventListener('click', function(e) {
+        e.preventDefault(); 
+        
+        const urlHapus = this.getAttribute('href');
+        const namaEvent = this.getAttribute('data-nama');
+
+        Swal.fire({
+            title: 'Hapus Event?',
+            text: `Yakin ingin menghapus "${namaEvent}"? Data tidak bisa dikembalikan.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6', 
+            cancelButtonColor: '#d33',     
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            background: '#ffffff',
+            customClass: {
+                popup: 'rounded-4' 
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = urlHapus;
+            }
+        });
+    });
+});
+</script>
 
 <?php include '../../includes/footer.php'; ?>
