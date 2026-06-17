@@ -1,14 +1,16 @@
 <?php
-// ============================================
-// logout.php — Proses Logout Aman Berbasis BASE_URL
-// ============================================
+// ============================================================
+// logout.php — Proses Logout Aman & Pengalihan ke login.php
+// ============================================================
 session_start();
 
-// Load file koneksi untuk mendapatkan nilai konstanta BASE_URL resmi
+// Panggil koneksi untuk mendapatkan konstanta BASE_URL
 require_once 'config/koneksi.php';
 
 // Hapus seluruh data session login
 $_SESSION = array();
+
+// Hapus cookie sesi jika ada
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();
     setcookie(session_name(), '', time() - 42000,
@@ -16,9 +18,11 @@ if (ini_get("session.use_cookies")) {
         $params["secure"], $params["httponly"]
     );
 }
+
+// Hancurkan sesi
 session_destroy();
 
-// Redirect kembali ke root index menggunakan BASE_URL konkrit
-header('Location: ' . BASE_URL . '/index.php?logout=1');
+// Alihkan kembali ke login.php dengan membawa pesan sukses logout
+header('Location: ' . BASE_URL . '/login.php?logout=1');
 exit;
 ?>
